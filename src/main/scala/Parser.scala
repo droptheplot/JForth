@@ -17,6 +17,7 @@ object Parser {
       case ">"         => Node(Command(">"))
       case "and"       => Node(Command("and"))
       case "or"        => Node(Command("or"))
+      case "."         => Node(Command("iprint"))
       case intRegex(i) => Node(Const(i.toInt))
       case v           => Node(Const(v))
     }

@@ -41,6 +41,32 @@ case class Node(state: State) extends Syntax {
           mv.visitLabel(elseLabel)
           mv.visitIntInsn(BIPUSH, FALSE)
           mv.visitLabel(endLabel)
+        case "iprint" =>
+          mv.visitVarInsn(ISTORE, 2)
+
+          mv.visitFieldInsn(GETSTATIC,
+                            "java/lang/System",
+                            "out",
+                            "Ljava/io/PrintStream;")
+
+          mv.visitVarInsn(ILOAD, 2)
+
+          mv.visitMethodInsn(INVOKESTATIC,
+                             "java/lang/Integer",
+                             "valueOf",
+                             "(I)Ljava/lang/Integer;",
+                             false)
+          mv.visitMethodInsn(INVOKEVIRTUAL,
+                             "java/lang/Integer",
+                             "toString",
+                             "()Ljava/lang/String;",
+                             false)
+
+          mv.visitMethodInsn(INVOKEVIRTUAL,
+                             "java/io/PrintStream",
+                             "println",
+                             "(Ljava/lang/String;)V",
+                             false)
       }
   }
 }
