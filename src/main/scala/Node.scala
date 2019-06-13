@@ -22,7 +22,7 @@ case class Node(state: State) extends Syntax {
         case "isub" => mv.visitInsn(ISUB)
         case "idiv" => mv.visitInsn(IDIV)
         case "dup"  => mv.visitInsn(DUP)
-        case "pop"  => mv.visitInsn(DUP)
+        case "pop"  => mv.visitInsn(POP)
         case "swap" => mv.visitInsn(SWAP)
         case "and"  => mv.visitInsn(IAND)
         case "or"   => mv.visitInsn(IOR)
