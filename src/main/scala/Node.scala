@@ -24,6 +24,8 @@ case class Node(state: State) extends Syntax {
         case "dup"  => mv.visitInsn(DUP)
         case "pop"  => mv.visitInsn(DUP)
         case "swap" => mv.visitInsn(SWAP)
+        case "and"  => mv.visitInsn(IAND)
+        case "or"   => mv.visitInsn(IOR)
         case "=" | "<" | ">" =>
           val elseLabel: Label = new Label
           val endLabel: Label  = new Label
