@@ -1,25 +1,23 @@
 import java.io.FileOutputStream
 
-import cats.effect._
 import org.objectweb.asm._
+import cats.effect._
 
 import scala.language.higherKinds
 
 object Main extends IOApp with Opcodes {
   def run(args: List[String]): IO[ExitCode] = {
-    val node: List[Node] = List[Node](
-      Node(Const(5)),
-      Node(Command("dup")),
-      Node(Command("iadd")),
-      Node(Const(100)),
-      Node(Command("swap")),
-      Node(Command("idiv")),
-    )
-
-    val byteCode: Array[Byte] = Compiler.run(node)
+    val source: String        = args.mkString(" ")
+    val tokens: Seq[String]   = Tokenizer(source)
+    val nodes: Seq[Node]      = Parser(tokens)
+    val byteCode: Array[Byte] = Compiler.run(nodes)
 
     IO { new FileOutputStream("Hello.class") }
       .map(_.write(byteCode))
-      .map(_ => ExitCode.Success)
+      .attempt
+      .map {
+        case Left(_)  => ExitCode.Error
+        case Right(_) => ExitCode.Success
+      }
   }
 }
