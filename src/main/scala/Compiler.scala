@@ -4,7 +4,7 @@ object Compiler {
   import Opcodes._
 
   def run(nodes: List[Node]): Array[Byte] = {
-    val cw: ClassWriter   = new ClassWriter(0)
+    val cw: ClassWriter   = new ClassWriter(ClassWriter.COMPUTE_FRAMES)
     var mv: MethodVisitor = null
     val index: Int        = 2 // FIXME
 
