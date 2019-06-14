@@ -1,24 +1,19 @@
-import scala.util.matching.Regex
-
 object Parser {
-  val intRegex: Regex = "(\\d+)".r
+  import fastparse._, SingleLineWhitespace._
 
-  def apply(tokens: Seq[String]): Seq[Node] =
-    tokens.map {
-      case "+"         => Node(Command("iadd"))
-      case "-"         => Node(Command("isub"))
-      case "*"         => Node(Command("imul"))
-      case "/"         => Node(Command("idiv"))
-      case "dup"       => Node(Command("dup"))
-      case "pop"       => Node(Command("pop"))
-      case "swap"      => Node(Command("swap"))
-      case "="         => Node(Command("="))
-      case "<"         => Node(Command("<"))
-      case ">"         => Node(Command(">"))
-      case "and"       => Node(Command("and"))
-      case "or"        => Node(Command("or"))
-      case "."         => Node(Command("iprint"))
-      case intRegex(i) => Node(Const(i.toInt))
-      case v           => Node(Const(v))
-    }
+  def space[_: P]: P[Unit]        = P { CharsWhileIn(" \r\n\t,").? }
+  def number[_: P]: P[Unit]       = P { CharsWhileIn("0-9") }
+  def operator[_: P]: P[Unit]     = P { CharsWhileIn("+\\-*/.<=>") }
+  def char[_: P]: P[Unit]         = P { CharsWhileIn("a-z") }
+  def atom[_: P]: P[Atom[String]] = P { (char | number).!.map(Atom[String]) }
+  def op[_: P]: P[Op[String]]     = P { operator.!.map(Op[String]) }
+
+  def definition[_: P]: P[Defn[String]] =
+    P { (":" ~ atom ~ atom.rep(1, space) ~ ";").map { case (Atom(v), e) => Defn(v, e) } }
+
+  def parser[_: P]: P[Seq[Expr[String]]] =
+    P { (atom | op | definition).rep(1, space) }
+
+  def apply(source: String): Parsed[Seq[Expr[String]]] =
+    parse(source, parser(_))
 }

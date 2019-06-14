@@ -3,19 +3,15 @@ import org.objectweb.asm._
 object Compiler {
   import Opcodes._
 
-  def run(nodes: Seq[Node]): Array[Byte] = {
+  def run(exprs: Seq[Expr[String]]): Array[Byte] = {
     val cw: ClassWriter   = new ClassWriter(ClassWriter.COMPUTE_FRAMES)
     var mv: MethodVisitor = null
 
     file(cw, "Hello") // FIXME
 
-    mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC,
-                        "main",
-                        "([Ljava/lang/String;)V",
-                        null,
-                        null)
+    mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null)
 
-    nodes.foreach(_.run(mv))
+    exprs.foreach(_.run(mv))
 
     mv.visitInsn(RETURN)
     mv.visitMaxs(100, 100) // FIXME
