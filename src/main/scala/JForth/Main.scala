@@ -1,10 +1,10 @@
+package JForth
+
 import java.io.FileOutputStream
 
-import cats.effect._
+import cats.effect.{ExitCode, IO, IOApp}
 import fastparse.Parsed.{Failure, Success}
-import org.objectweb.asm._
-
-import scala.language.higherKinds
+import org.objectweb.asm.Opcodes
 
 object Main extends IOApp with Opcodes {
   def run(args: List[String]): IO[ExitCode] = {

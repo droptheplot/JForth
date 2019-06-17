@@ -1,4 +1,7 @@
-import org.objectweb.asm._
+package JForth
+
+import cats.data.State
+import org.objectweb.asm.{ClassWriter, MethodVisitor, Opcodes}
 
 object Compiler {
   import Opcodes._
@@ -11,7 +14,13 @@ object Compiler {
 
     mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null)
 
-    exprs.foreach(_.run(mv))
+    val state: State[Defns[String], Unit] =
+      exprs.foldLeft(State.pure[Map[String, Defn[String]], Unit](())) {
+        case (s, e) =>
+          s.flatMap(_ => e.run(mv))
+      }
+
+    println("state: ", state.run(Map[String, Defn[String]]()).value.toString)
 
     mv.visitInsn(RETURN)
     mv.visitMaxs(100, 100) // FIXME
