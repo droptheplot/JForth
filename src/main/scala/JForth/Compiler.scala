@@ -14,13 +14,12 @@ object Compiler {
 
     mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null)
 
-    val state: State[Defns[String], Unit] =
-      exprs.foldLeft(State.pure[Map[String, Defn[String]], Unit](())) {
-        case (s, e) =>
-          s.flatMap(_ => e.run(mv))
+    exprs
+      .foldLeft(State.pure[Context[String], Unit](())) {
+        case (s, e) => s.flatMap(_ => e.run(mv))
       }
-
-    println("state: ", state.run(Map[String, Defn[String]]()).value.toString)
+      .run(Context[String]())
+      .value
 
     mv.visitInsn(RETURN)
     mv.visitMaxs(0, 0)

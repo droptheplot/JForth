@@ -5,98 +5,324 @@ import org.objectweb.asm._
 
 import scala.util.Try
 
+/** Represents Forth AST
+  *
+  * [[Expr]]
+  * - [[Atom]]
+  * - [[Op]]
+  * - - [[Add]]
+  * - - [[Mul]]
+  * - - [[Sub]]
+  * - - [[Div]]
+  * - - [[Dup]]
+  * - - [[Pop]]
+  * - - [[Swap]]
+  * - - [[And]]
+  * - - [[Or]]
+  * - - [[Print]]
+  * - - [[If]]
+  * - - [[Else]]
+  * - - [[Then]]
+  * - [[Cond]]
+  * - - [[Eq]]
+  * - - [[Le]]
+  * - - [[Ge]]
+  */
 sealed trait Expr[T] {
-  def run(mv: MethodVisitor): State[Map[String, Defn[T]], Unit]
+  def run(mv: MethodVisitor): State[Context[T], Unit]
 }
 
 case class Atom[T](value: T) extends Expr[T] {
-
   import Opcodes._
 
-  def run(mv: MethodVisitor): State[Map[String, Defn[T]], Unit] =
-    State[Map[String, Defn[T]], Unit] { defns =>
+  def run(mv: MethodVisitor): State[Context[T], Unit] =
+    State[Context[T], Unit] { ctx =>
       value match {
         case v: String if Try(v.toInt).isSuccess =>
           mv.visitIntInsn(BIPUSH, v.toInt)
 
-          (defns, ())
+          (ctx, ())
         case v: String =>
-          defns(v).exprs
-            .foldLeft(State.set[Map[String, Defn[T]]](defns)) { (state, expr) =>
+          ctx
+            .defns(v)
+            .exprs
+            .foldLeft(State.set[Context[T]](ctx)) { (state, expr) =>
               state.flatMap { _ =>
                 expr.run(mv)
               }
             }
-            .run(defns)
+            .run(ctx)
             .value
         case v =>
           mv.visitLdcInsn(v)
 
-          (defns, ())
+          (ctx, ())
       }
     }
 }
 
 case class Defn[T](value: String, exprs: Seq[Expr[T]]) extends Expr[T] {
-  def run(mv: MethodVisitor): State[Defns[T], Unit] = State[Defns[T], Unit] { defns =>
-    (defns + (value -> Defn(value, exprs)), ())
+  def run(mv: MethodVisitor): State[Context[T], Unit] = State[Context[T], Unit] { ctx =>
+    (ctx.copy(ctx.defns + (value -> Defn(value, exprs))), ())
   }
 }
 
-case class Op[T](value: T) extends Expr[T] with Syntax {
+sealed trait Op[T] extends Expr[T]
+
+object Op {
+  def fromToken(t: String): Op[String] = t match {
+    case Add.token   => Add()
+    case Mul.token   => Mul()
+    case Sub.token   => Sub()
+    case Div.token   => Div()
+    case Dup.token   => Dup()
+    case Pop.token   => Pop()
+    case Swap.token  => Swap()
+    case Eq.token    => Eq()
+    case Le.token    => Le()
+    case Ge.token    => Ge()
+    case And.token   => And()
+    case Or.token    => Or()
+    case Print.token => Print()
+    case If.token    => If()
+    case Else.token  => Else()
+    case Then.token  => Then()
+  }
+}
+
+case class Add() extends Op[String] {
   import Opcodes._
 
-  override def run(mv: MethodVisitor): State[Defns[T], Unit] = State[Defns[T], Unit] { defns =>
-    value match {
-      case "+"    => mv.visitInsn(IADD)
-      case "*"    => mv.visitInsn(IMUL)
-      case "-"    => mv.visitInsn(ISUB)
-      case "/"    => mv.visitInsn(IDIV)
-      case "dup"  => mv.visitInsn(DUP)
-      case "pop"  => mv.visitInsn(POP)
-      case "swap" => mv.visitInsn(SWAP)
-      case "and"  => mv.visitInsn(IAND)
-      case "or"   => mv.visitInsn(IOR)
-      case "=" | "<" | ">" =>
-        val elseLabel: Label = new Label
-        val endLabel: Label  = new Label
+  def run(mv: MethodVisitor): State[Context[String], Unit] = State.pure[Context[String], Unit] {
+    mv.visitInsn(IADD)
+  }
+}
 
-        value match {
-          case "=" => mv.visitJumpInsn(IF_ICMPNE, elseLabel)
-          case "<" => mv.visitJumpInsn(IF_ICMPGE, elseLabel)
-          case ">" => mv.visitJumpInsn(IF_ICMPLE, elseLabel)
-        }
+object Add {
+  val token: String = "+"
+}
 
-        mv.visitIntInsn(BIPUSH, TRUE)
-        mv.visitJumpInsn(GOTO, endLabel)
-        mv.visitLabel(elseLabel)
-        mv.visitIntInsn(BIPUSH, FALSE)
-        mv.visitLabel(endLabel)
-      case "." =>
-        mv.visitVarInsn(ISTORE, 2)
+case class Mul() extends Op[String] {
+  import Opcodes._
 
-        mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
+  def run(mv: MethodVisitor): State[Context[String], Unit] = State.pure[Context[String], Unit] {
+    mv.visitInsn(IMUL)
+  }
+}
 
-        mv.visitVarInsn(ILOAD, 2)
+object Mul {
+  val token: String = "*"
+}
 
-        mv.visitMethodInsn(INVOKESTATIC,
-                           "java/lang/Integer",
-                           "valueOf",
-                           "(I)Ljava/lang/Integer;",
-                           false)
-        mv.visitMethodInsn(INVOKEVIRTUAL,
-                           "java/lang/Integer",
-                           "toString",
-                           "()Ljava/lang/String;",
-                           false)
+case class Sub() extends Op[String] {
+  import Opcodes._
 
-        mv.visitMethodInsn(INVOKEVIRTUAL,
-                           "java/io/PrintStream",
-                           "println",
-                           "(Ljava/lang/String;)V",
-                           false)
+  def run(mv: MethodVisitor): State[Context[String], Unit] = State.pure[Context[String], Unit] {
+    mv.visitInsn(ISUB)
+  }
+}
+
+object Sub {
+  val token: String = "-"
+}
+
+case class Div() extends Op[String] {
+  import Opcodes._
+
+  def run(mv: MethodVisitor): State[Context[String], Unit] = State.pure[Context[String], Unit] {
+    mv.visitInsn(IDIV)
+  }
+}
+
+object Div {
+  val token: String = "/"
+}
+
+case class Dup() extends Op[String] {
+  import Opcodes._
+
+  def run(mv: MethodVisitor): State[Context[String], Unit] = State.pure[Context[String], Unit] {
+    mv.visitInsn(DUP)
+  }
+}
+
+object Dup {
+  val token: String = "dup"
+}
+
+case class Pop() extends Op[String] {
+  import Opcodes._
+
+  def run(mv: MethodVisitor): State[Context[String], Unit] = State.pure[Context[String], Unit] {
+    mv.visitInsn(POP)
+  }
+}
+
+object Pop {
+  val token: String = "pop"
+}
+
+case class Swap() extends Op[String] {
+  import Opcodes._
+
+  def run(mv: MethodVisitor): State[Context[String], Unit] = State.pure[Context[String], Unit] {
+    mv.visitInsn(SWAP)
+  }
+}
+
+object Swap {
+  val token: String = "swap"
+}
+
+case class And() extends Op[String] {
+  import Opcodes._
+
+  def run(mv: MethodVisitor): State[Context[String], Unit] = State.pure[Context[String], Unit] {
+    mv.visitInsn(IAND)
+  }
+}
+
+object And {
+  val token: String = "and"
+}
+
+case class Or() extends Op[String] {
+  import Opcodes._
+
+  def run(mv: MethodVisitor): State[Context[String], Unit] = State.pure[Context[String], Unit] {
+    mv.visitInsn(IOR)
+  }
+}
+
+object Or {
+  val token: String = "or"
+}
+
+sealed trait Cond[T] extends Op[T] with Syntax {
+  import Opcodes._
+
+  def run(mv: MethodVisitor): State[Context[T], Unit] = State.pure[Context[T], Unit] {
+    val elseLabel: Label = new Label
+    val endLabel: Label  = new Label
+
+    this match {
+      case _: Eq => mv.visitJumpInsn(IF_ICMPNE, elseLabel)
+      case _: Le => mv.visitJumpInsn(IF_ICMPGE, elseLabel)
+      case _: Ge => mv.visitJumpInsn(IF_ICMPLE, elseLabel)
     }
 
-    (defns, ())
+    mv.visitIntInsn(BIPUSH, TRUE)
+    mv.visitJumpInsn(GOTO, endLabel)
+    mv.visitLabel(elseLabel)
+    mv.visitIntInsn(BIPUSH, FALSE)
+    mv.visitLabel(endLabel)
   }
+}
+
+case class Eq() extends Cond[String]
+
+object Eq {
+  val token: String = "="
+}
+
+case class Le() extends Cond[String] {}
+
+object Le {
+  val token: String = "<"
+}
+
+case class Ge() extends Cond[String] {}
+
+object Ge {
+  val token: String = ">"
+}
+
+case class Print() extends Op[String] {
+  import Opcodes._
+
+  override def run(mv: MethodVisitor): State[Context[String], Unit] =
+    State.pure[Context[String], Unit] {
+      mv.visitVarInsn(ISTORE, 2)
+
+      mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
+
+      mv.visitVarInsn(ILOAD, 2)
+
+      mv.visitMethodInsn(INVOKESTATIC,
+                         "java/lang/Integer",
+                         "valueOf",
+                         "(I)Ljava/lang/Integer;",
+                         false)
+      mv.visitMethodInsn(INVOKEVIRTUAL,
+                         "java/lang/Integer",
+                         "toString",
+                         "()Ljava/lang/String;",
+                         false)
+
+      mv.visitMethodInsn(INVOKEVIRTUAL,
+                         "java/io/PrintStream",
+                         "println",
+                         "(Ljava/lang/String;)V",
+                         false)
+    }
+}
+
+object Print {
+  val token: String = "."
+}
+
+case class If() extends Op[String] with Syntax {
+  import Opcodes._
+
+  def run(mv: MethodVisitor): State[Context[String], Unit] = State[Context[String], Unit] { ctx =>
+    val endLabel: Label = new Label
+
+    mv.visitIntInsn(BIPUSH, TRUE)
+    mv.visitJumpInsn(IF_ICMPNE, endLabel)
+
+    (ctx.copy(label = Some(endLabel)), ())
+  }
+}
+
+object If {
+  val token: String = "if"
+}
+
+case class Else() extends Op[String] with Syntax {
+  import Opcodes._
+
+  val token: String = "else"
+
+  def run(mv: MethodVisitor): State[Context[String], Unit] = State[Context[String], Unit] { ctx =>
+    ctx.label match {
+      case Some(endLabel) =>
+        val newEndLabel: Label = new Label
+
+        mv.visitJumpInsn(GOTO, newEndLabel)
+        mv.visitLabel(endLabel)
+
+        (ctx.copy(label = Some(newEndLabel)), ())
+      case _ =>
+        (ctx, ())
+    }
+  }
+}
+
+object Else {
+  val token: String = "else"
+}
+
+case class Then() extends Op[String] with Syntax {
+  def run(mv: MethodVisitor): State[Context[String], Unit] = State[Context[String], Unit] { ctx =>
+    ctx.label match {
+      case Some(endLabel) =>
+        mv.visitLabel(endLabel)
+    }
+
+    (ctx.copy(label = None), ())
+  }
+}
+
+object Then {
+  val token: String = "then"
 }
