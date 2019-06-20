@@ -7,7 +7,7 @@ object Compiler {
   import Opcodes._
 
   def run(exprs: Seq[Expr[String]]): Array[Byte] = {
-    val cw: ClassWriter   = new ClassWriter(ClassWriter.COMPUTE_FRAMES)
+    val cw: ClassWriter   = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS)
     var mv: MethodVisitor = null
 
     file(cw, "Hello") // FIXME
@@ -23,7 +23,7 @@ object Compiler {
     println("state: ", state.run(Map[String, Defn[String]]()).value.toString)
 
     mv.visitInsn(RETURN)
-    mv.visitMaxs(100, 100) // FIXME
+    mv.visitMaxs(0, 0)
     mv.visitEnd()
 
     cw.visitEnd()
