@@ -10,12 +10,19 @@ object Parser {
   def word[_: P]: P[Unit]         = P { CharsWhileIn("a-z") }
   def atom[_: P]: P[Atom[String]] = P { (word | number).!.map(Atom[String]) }
   def op[_: P]: P[Op[String]]     = P { operator.!.map(Op.fromToken) }
+  def output[_: P]: P[Output[String]] = P {
+    ".\"" ~ CharPred(_ != '"').rep.!.map(Output[String]) ~ "\""
+  }
 
   def definition[_: P]: P[Defn[String]] =
-    P { (":" ~ atom ~ (op | atom).rep(1, space) ~ ";").map { case (Atom(v), e) => Defn(v, e) } }
+    P {
+      (":" ~ atom ~ (output | op | atom).rep(1, space) ~ ";").map {
+        case (Atom(v), e) => Defn(v, e)
+      }
+    }
 
   def parser[_: P]: P[Seq[Expr[String]]] =
-    P { (op | atom | definition).rep(1, space) }
+    P { (output | op | atom | definition).rep(1, space) }
 
   def apply(source: String): Parsed[Seq[Expr[String]]] =
     parse(source, parser(_))

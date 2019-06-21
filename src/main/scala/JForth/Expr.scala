@@ -27,6 +27,7 @@ import scala.util.Try
   * - - [[Eq]]
   * - - [[Le]]
   * - - [[Ge]]
+  * - [[Output]]
   */
 sealed trait Expr[T] {
   def run(mv: MethodVisitor): State[Context[T], Unit]
@@ -325,4 +326,20 @@ case class Then() extends Op[String] with Syntax {
 
 object Then {
   val token: String = "then"
+}
+
+case class Output[T](value: T) extends Expr[T] {
+  import Opcodes._
+
+  def run(mv: MethodVisitor): State[Context[T], Unit] = State.pure[Context[T], Unit] {
+    mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
+
+    mv.visitLdcInsn(value)
+
+    mv.visitMethodInsn(INVOKEVIRTUAL,
+                       "java/io/PrintStream",
+                       "println",
+                       "(Ljava/lang/String;)V",
+                       false)
+  }
 }
