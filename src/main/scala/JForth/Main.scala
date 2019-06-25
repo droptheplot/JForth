@@ -7,25 +7,23 @@ import fastparse.Parsed.{Failure, Success}
 import org.objectweb.asm.Opcodes
 
 object Main extends IOApp with Opcodes {
-  def run(args: List[String]): IO[ExitCode] = {
-    val source: String = args.mkString(" ")
-
-    val byteCode: Array[Byte] =
-      Parser(source) match {
-        case Failure(_, _, extra) =>
-          println(extra.toString)
-          Array[Byte]()
-        case Success(value, _) =>
-          println(value.toString)
-          Compiler.run(value)
-      }
-
-    IO { new FileOutputStream("Hello.class") }
-      .map(_.write(byteCode))
-      .attempt
-      .map {
-        case Left(_)  => ExitCode.Error
-        case Right(_) => ExitCode.Success
-      }
-  }
+  def run(args: List[String]): IO[ExitCode] =
+    Parser(args.mkString(" ")) match {
+      case Failure(_, _, extra) =>
+        for {
+          _ <- IO { println(extra.toString) }
+        } yield ExitCode.Error
+      case Success(exprs, _) =>
+        for {
+          _ <- IO { println(exprs.toString) }
+          byteArray = Compiler.run(exprs)
+          exitCode <- IO { new FileOutputStream("Hello.class") }
+            .map(_.write(byteArray))
+            .attempt
+            .map {
+              case Left(_)  => ExitCode.Error
+              case Right(_) => ExitCode.Success
+            }
+        } yield exitCode
+    }
 }
