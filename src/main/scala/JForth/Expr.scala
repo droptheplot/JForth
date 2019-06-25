@@ -19,6 +19,7 @@ import scala.util.Try
   * - - [[Swap]]
   * - - [[And]]
   * - - [[Or]]
+  * - - [[Mod]]
   * - - [[Print]]
   * - - [[If]]
   * - - [[Else]]
@@ -84,6 +85,7 @@ object Op {
     case Ge.token    => Ge()
     case And.token   => And()
     case Or.token    => Or()
+    case Mod.token   => Mod()
     case Print.token => Print()
     case If.token    => If()
     case Else.token  => Else()
@@ -197,6 +199,18 @@ case class Or() extends Op[String] {
 
 object Or {
   val token: String = "or"
+}
+
+case class Mod() extends Op[String] {
+  import Opcodes._
+
+  def run(mv: MethodVisitor): State[Context[String], Unit] = State.pure[Context[String], Unit] {
+    mv.visitInsn(IREM)
+  }
+}
+
+object Mod {
+  val token: String = "mod"
 }
 
 sealed trait Cond[T] extends Op[T] with Syntax {
