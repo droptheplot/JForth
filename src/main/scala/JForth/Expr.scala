@@ -73,23 +73,24 @@ sealed trait Op[T] extends Expr[T]
 
 object Op {
   def fromToken(t: String): Op[String] = t match {
-    case Add.token   => Add()
-    case Mul.token   => Mul()
-    case Sub.token   => Sub()
-    case Div.token   => Div()
-    case Dup.token   => Dup()
-    case Pop.token   => Pop()
-    case Swap.token  => Swap()
-    case Eq.token    => Eq()
-    case Le.token    => Le()
-    case Ge.token    => Ge()
-    case And.token   => And()
-    case Or.token    => Or()
-    case Mod.token   => Mod()
-    case Print.token => Print()
-    case If.token    => If()
-    case Else.token  => Else()
-    case Then.token  => Then()
+    case Add.token    => Add()
+    case Mul.token    => Mul()
+    case Sub.token    => Sub()
+    case Div.token    => Div()
+    case Dup.token    => Dup()
+    case Pop.token    => Pop()
+    case Swap.token   => Swap()
+    case Eq.token     => Eq()
+    case Le.token     => Le()
+    case Ge.token     => Ge()
+    case And.token    => And()
+    case Or.token     => Or()
+    case Mod.token    => Mod()
+    case Invert.token => Invert()
+    case Print.token  => Print()
+    case If.token     => If()
+    case Else.token   => Else()
+    case Then.token   => Then()
   }
 }
 
@@ -211,6 +212,19 @@ case class Mod() extends Op[String] {
 
 object Mod {
   val token: String = "mod"
+}
+
+case class Invert() extends Op[String] {
+  import Opcodes._
+
+  def run(mv: MethodVisitor): State[Context[String], Unit] = State.pure[Context[String], Unit] {
+    mv.visitInsn(ICONST_M1)
+    mv.visitInsn(IXOR)
+  }
+}
+
+object Invert {
+  val token: String = "invert"
 }
 
 sealed trait Cond[T] extends Op[T] with Syntax {
