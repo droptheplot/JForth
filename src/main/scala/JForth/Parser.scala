@@ -7,7 +7,7 @@ object Parser {
   def space[_: P]: P[Unit]        = P { CharsWhileIn(" \r\n\t,").? }
   def number[_: P]: P[Unit]       = P { CharsWhileIn("0-9") }
   def operator[_: P]: P[Unit]     = P { CharsWhileIn("+\\-*/.<=>") | "if" | "else" | "then" }
-  def word[_: P]: P[Unit]         = P { CharsWhileIn("a-zA-Z0-9_!?") }
+  def word[_: P]: P[Unit]         = P { CharsWhileIn("a-zA-Z0-9_\\-!?") }
   def atom[_: P]: P[Atom[String]] = P { (word | number).!.map(Atom[String]) }
   def op[_: P]: P[Op[String]]     = P { operator.!.map(Op.fromToken) }
   def output[_: P]: P[Output[String]] = P {
