@@ -6,6 +6,9 @@ import sys.process._
 class MainSpec extends FunSpec {
   describe("valid syntax") {
     List[(String, String)](
+      ("1 2 3 dup .", "3"),
+      ("1 2 3 pop .", "2"),
+      ("1 2 3 4 swap .", "3"),
       ("1 2 3 + + .", "6"),
       ("5 2 + 10 * .", "70"),
       ("3 4 = .", "0"),
