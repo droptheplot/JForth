@@ -282,12 +282,14 @@ case class Print() extends Op[String] {
   import Opcodes._
 
   override def run(mv: MethodVisitor): State[Context[String], Unit] =
-    State.pure[Context[String], Unit] {
-      mv.visitVarInsn(ISTORE, 2)
+    State[Context[String], Unit] { ctx =>
+      val varIndex: Int = ctx.varIndex.next
+
+      mv.visitVarInsn(ISTORE, varIndex)
 
       mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
 
-      mv.visitVarInsn(ILOAD, 2)
+      mv.visitVarInsn(ILOAD, varIndex)
 
       mv.visitMethodInsn(INVOKESTATIC,
                          "java/lang/Integer",
@@ -305,6 +307,8 @@ case class Print() extends Op[String] {
                          "print",
                          "(Ljava/lang/String;)V",
                          false)
+
+      (ctx, ())
     }
 }
 
@@ -375,10 +379,12 @@ case class Loop(end: Int, start: Int, exprs: Seq[Expr[String]]) extends Expr[Str
     val startLabel: Label = new Label
     val endLabel: Label   = new Label
 
+    val varIndex: Int = ctx.varIndex.next
+
     mv.visitIntInsn(BIPUSH, start)
-    mv.visitVarInsn(ISTORE, 3)
+    mv.visitVarInsn(ISTORE, varIndex)
     mv.visitLabel(startLabel)
-    mv.visitVarInsn(ILOAD, 3)
+    mv.visitVarInsn(ILOAD, varIndex)
     mv.visitIntInsn(BIPUSH, end)
 
     mv.visitJumpInsn(IF_ICMPGE, endLabel)
@@ -390,11 +396,11 @@ case class Loop(end: Int, start: Int, exprs: Seq[Expr[String]]) extends Expr[Str
       .run(
         Context[String](
           defns = Map[String, Defn[String]](
-            "i" -> Defn("i", Seq[Expr[String]](Load[String](3)))
+            "i" -> Defn("i", Seq[Expr[String]](Load[String](varIndex)))
           )))
       .value
 
-    mv.visitIincInsn(3, 1)
+    mv.visitIincInsn(varIndex, 1)
 
     mv.visitJumpInsn(GOTO, startLabel)
     mv.visitLabel(endLabel)
