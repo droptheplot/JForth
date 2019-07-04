@@ -9,6 +9,8 @@ import scala.util.Try
   *
   * [[Expr]]
   * - [[Atom]]
+  * - [[Defn]]
+  * - [[Load]]
   * - [[Op]]
   * - - [[Add]]
   * - - [[Mul]]
@@ -24,6 +26,7 @@ import scala.util.Try
   * - - [[If]]
   * - - [[Else]]
   * - - [[Then]]
+  * - - [[Loop]]
   * - [[Cond]]
   * - - [[Eq]]
   * - - [[Le]]
@@ -61,6 +64,15 @@ case class Atom[T](value: T) extends Expr[T] {
           (ctx, ())
       }
     }
+}
+
+/** For internal use only */
+case class Load[T](index: Int) extends Expr[T] {
+  import Opcodes._
+
+  def run(mv: MethodVisitor): State[Context[T], Unit] = State.pure[Context[T], Unit] {
+    mv.visitVarInsn(ILOAD, index)
+  }
 }
 
 case class Defn[T](value: String, exprs: Seq[Expr[T]]) extends Expr[T] {
@@ -354,6 +366,41 @@ case class Then() extends Op[String] with Syntax {
 
 object Then {
   val token: String = "then"
+}
+
+case class Loop(end: Int, start: Int, exprs: Seq[Expr[String]]) extends Expr[String] {
+  import Opcodes._
+
+  def run(mv: MethodVisitor): State[Context[String], Unit] = State[Context[String], Unit] { ctx =>
+    val startLabel: Label = new Label
+    val endLabel: Label   = new Label
+
+    mv.visitIntInsn(BIPUSH, start)
+    mv.visitVarInsn(ISTORE, 3)
+    mv.visitLabel(startLabel)
+    mv.visitVarInsn(ILOAD, 3)
+    mv.visitIntInsn(BIPUSH, end)
+
+    mv.visitJumpInsn(IF_ICMPGE, endLabel)
+
+    exprs
+      .foldLeft(State.pure[Context[String], Unit](())) {
+        case (s, e) => s.flatMap(_ => e.run(mv))
+      }
+      .run(
+        Context[String](
+          defns = Map[String, Defn[String]](
+            "i" -> Defn("i", Seq[Expr[String]](Load[String](3)))
+          )))
+      .value
+
+    mv.visitIincInsn(3, 1)
+
+    mv.visitJumpInsn(GOTO, startLabel)
+    mv.visitLabel(endLabel)
+
+    (ctx, ())
+  }
 }
 
 case class Output[T](value: T) extends Expr[T] {

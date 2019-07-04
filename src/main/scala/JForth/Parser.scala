@@ -17,10 +17,16 @@ object Parser {
   def output[_: P]: P[Output[String]] = P {
     ".\"" ~ CharPred(_ != '"').rep.!.map(Output[String]) ~ "\""
   }
+  def loop[_: P]: P[Loop] = P {
+    (number.!.map(_.toInt) ~ number.!.map(_.toInt) ~
+      "do" ~ ((output | op | !"loop" ~ atom).rep(1, space) ~ "loop"))
+      .map((Loop.apply _).tupled)
+  }
 
   def definition[_: P]: P[Defn[String]] =
     P {
-      (":" ~ atom ~ (output | op | atom).rep(1, space) ~ ";").map {
+      (":" ~ atom ~
+        (loop.map(Seq[Expr[String]](_)) | (output | op | atom).rep(1, space)) ~ ";").map {
         case (Atom(v), e) => Defn(v, e)
       }
     }
