@@ -290,7 +290,7 @@ case class Print() extends Op[String] {
 
       mv.visitMethodInsn(INVOKEVIRTUAL,
                          "java/io/PrintStream",
-                         "println",
+                         "print",
                          "(Ljava/lang/String;)V",
                          false)
     }
