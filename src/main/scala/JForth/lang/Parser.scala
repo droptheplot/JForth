@@ -1,4 +1,8 @@
-package JForth
+package JForth.lang
+
+import JForth.lang.expr.{Atom, Defn, Expr, Output}
+import JForth.lang.expr.op._
+import JForth.lang.expr.op.cond.{Eq, Ge, Le}
 
 object Parser {
   import fastparse._

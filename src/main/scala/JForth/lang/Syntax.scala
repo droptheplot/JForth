@@ -1,4 +1,4 @@
-package JForth
+package JForth.lang
 
 trait Syntax {
   val TRUE: Int  = -1

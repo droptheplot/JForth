@@ -5,6 +5,7 @@ import java.io.FileOutputStream
 import cats.effect.{ExitCode, IO, IOApp}
 import fastparse.Parsed.{Failure, Success}
 import org.objectweb.asm.Opcodes
+import JForth.lang.{Compiler, Parser}
 
 object Main extends IOApp with Opcodes {
   def run(args: List[String]): IO[ExitCode] =
