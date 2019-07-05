@@ -23,15 +23,14 @@ case class Loop(end: Int, start: Int, exprs: Seq[Expr[String]]) extends Expr[Str
 
     mv.visitJumpInsn(IF_ICMPGE, endLabel)
 
+    val innerCtx: State[Context[String], Unit] = State.set[Context[String]](
+      ctx.copy(ctx.defns + ("i" -> Defn("i", Seq[Expr[String]](Load[String](varIndex))))))
+
     exprs
-      .foldLeft(State.pure[Context[String], Unit](())) {
-        case (s, e) => s.flatMap(_ => e.run(mv))
+      .foldLeft(innerCtx) { (state, expr) =>
+        state.flatMap(_ => expr.run(mv))
       }
-      .run(
-        Context[String](
-          defns = Map[String, Defn[String]](
-            "i" -> Defn("i", Seq[Expr[String]](Load[String](varIndex)))
-          )))
+      .run(ctx)
       .value
 
     mv.visitIincInsn(varIndex, 1)
