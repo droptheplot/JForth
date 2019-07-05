@@ -1,7 +1,6 @@
 package JForth.lang
 
 import cats.data.State
-import JForth.lang
 import org.objectweb.asm.{ClassWriter, MethodVisitor, Opcodes}
 import JForth.lang.expr.Expr
 
@@ -20,7 +19,7 @@ object Compiler {
       .foldLeft(State.pure[Context[String], Unit](())) {
         case (s, e) => s.flatMap(_ => e.run(mv))
       }
-      .run(lang.Context[String]())
+      .run(Context[String]())
       .value
 
     mv.visitInsn(RETURN)
