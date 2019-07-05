@@ -23,6 +23,8 @@ class MainSpec extends FunSpec {
       (": is-it-zero?  0 = if .\"Yes!\" else .\" No!\" then ; 0 is-it-zero?", "Yes!"),
       (": is-it-zero?  0 = if .\"Yes!\" else .\" No!\" then ; 1 is-it-zero?", "No!"),
       (": loop-test  10 0 do i . loop ; loop-test", "0123456789"),
+      (": fizz?  3 mod 0 = dup if .\" Fizz\" then ; : buzz?  5 mod 0 = dup if .\" Buzz\" then ; : fizz-buzz?  dup fizz? swap buzz? or invert ; : do-fizz-buzz 25 1 do i fizz-buzz? if i . then loop ; do-fizz-buzz",
+       "12Fizz4BuzzFizz78FizzBuzz11Fizz1314FizzBuzz1617Fizz19BuzzFizz2223Fizz"),
     ).foreach {
       case (source, result) =>
         describe(source) {
