@@ -15,7 +15,8 @@ object Parser {
   def op[_: P]: P[Op[String]] = P {
     (Add.token | Mul.token | Sub.token | Div.token | Dup.token |
       Pop.token | Swap.token | Eq.token | Le.token | Ge.token | And.token | Or.token | Mod.token |
-      Invert.token | Print.token | If.token | Else.token | Then.token).!.map(Op.fromToken)
+      Invert.token | Print.token | If.token | Else.token | Then.token | Cr.token).!.map(
+      Op.fromToken)
   }
   def atom[_: P]: P[Atom[String]] = P { (word | number).!.map(Atom[String]) }
   def output[_: P]: P[Output[String]] = P {

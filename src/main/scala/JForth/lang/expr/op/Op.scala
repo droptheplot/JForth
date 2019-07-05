@@ -26,5 +26,6 @@ object Op {
     case If.token     => If()
     case Else.token   => Else()
     case Then.token   => Then()
+    case Cr.token     => Cr()
   }
 }

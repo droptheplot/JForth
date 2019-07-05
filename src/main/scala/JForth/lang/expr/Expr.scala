@@ -29,6 +29,7 @@ import JForth.lang.expr.op._
   * - - [[Then]]
   * - - [[Loop]]
   * - - [[Invert]]
+  * - - [[Cr]]
   * - - [[Cond]]
   * - - - [[Eq]]
   * - - - [[Le]]
