@@ -15,7 +15,7 @@ case class Output[T](value: T) extends Expr[T] {
 
     mv.visitMethodInsn(INVOKEVIRTUAL,
                        "java/io/PrintStream",
-                       "println",
+                       "print",
                        "(Ljava/lang/String;)V",
                        false)
   }
