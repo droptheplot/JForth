@@ -45,9 +45,9 @@ class MainSpec extends FunSpec {
       case (source, result) =>
         describe(source) {
           it(s"should return $result") {
-            Main.main(Array[String](source))
+            Main.main(Array[String]("-n", "MainSpec", "-i", source, "-o", "MainSpec.class"))
 
-            assert(("java Hello" !!).trim == result)
+            assert(("java MainSpec" !!).trim == result)
           }
         }
     }

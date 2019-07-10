@@ -14,3 +14,5 @@ libraryDependencies += "org.ow2.asm" % "asm" % "7.1"
 libraryDependencies += "com.lihaoyi" %% "fastparse" % "2.1.3"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % "test"
+
+libraryDependencies += "com.github.scopt" %% "scopt" % "4.0.0-RC2"

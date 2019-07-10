@@ -7,11 +7,11 @@ import JForth.lang.expr.Expr
 object Compiler {
   import Opcodes._
 
-  def run(exprs: Seq[Expr[String]]): Array[Byte] = {
+  def run(name: String, exprs: Seq[Expr[String]]): Array[Byte] = {
     val cw: ClassWriter   = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS)
     var mv: MethodVisitor = null
 
-    file(cw, "Hello") // FIXME
+    file(cw, name)
 
     mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null)
 
