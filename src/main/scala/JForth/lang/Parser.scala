@@ -3,8 +3,11 @@ package JForth.lang
 import JForth.lang.expr.{Atom, Defn, Expr, Output}
 import JForth.lang.expr.op._
 import JForth.lang.expr.op.cond.{Eq, Ge, Le}
+import JForth.{Config, ParserLike}
+import cats.data.Kleisli
+import cats.effect.IO
 
-object Parser {
+class Parser extends ParserLike {
   import fastparse._
   import SingleLineWhitespace._
 
@@ -39,6 +42,6 @@ object Parser {
   def parser[_: P]: P[Seq[Expr[String]]] =
     P { (output | op | atom | definition).rep(1, space) }
 
-  def apply(source: String): Parsed[Seq[Expr[String]]] =
-    parse(source, parser(_))
+  def apply(source: String): Kleisli[IO, Config, Parsed[Seq[Expr[String]]]] =
+    Kleisli[IO, Config, Parsed[Seq[Expr[String]]]](_ => IO.pure(parse(source, parser(_))))
 }

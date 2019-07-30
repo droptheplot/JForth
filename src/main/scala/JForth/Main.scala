@@ -5,12 +5,13 @@ import java.io.{File, FileOutputStream}
 import cats.effect.{ExitCode, IO, IOApp}
 import fastparse.Parsed.{Failure, Success}
 import org.objectweb.asm.Opcodes
-import JForth.lang.{Compiler, Parser}
 import scopt.{OParser, OParserBuilder}
 
 import scala.io.Source
 
 object Main extends IOApp with Opcodes {
+  val initConfig: Config = Config(parser = new lang.Parser, compiler = new lang.Compiler)
+
   val builder: OParserBuilder[Config] = OParser.builder[Config]
   val parser: OParser[Unit, Config] = {
     import builder._
@@ -36,40 +37,25 @@ object Main extends IOApp with Opcodes {
   }
 
   def run(args: List[String]): IO[ExitCode] =
-    OParser.parse(parser, args, Config()) match {
-      case Some(Config(Some(name), Some(input), Some(output))) =>
-        val source: String = input match {
-          case Left(i) => i
-          case Right(f) =>
-            val s = Source.fromFile(f)
-            try s.getLines.mkString
-            finally s.close
+    for {
+      config <- IO.fromEither(
+        OParser.parse(parser, args, initConfig) match {
+          case Some(a) => Right(a)
+          case None    => Left(new Exception("Cannot parse arguments"))
         }
-
-        Parser(source) match {
-          case Failure(_, _, extra) =>
-            for {
-              _ <- IO {
-                println(extra.toString)
-              }
-            } yield ExitCode.Error
-          case Success(exprs, _) =>
-            for {
-              _ <- IO {
-                println(exprs.toString)
-              }
-              byteArray = Compiler.run(name, exprs)
-              exitCode <- IO {
-                new FileOutputStream(output)
-              }.map(_.write(byteArray))
-                .attempt
-                .map {
-                  case Left(_)  => ExitCode.Error
-                  case Right(_) => ExitCode.Success
-                }
-            } yield exitCode
-        }
-      case _ =>
-        IO.pure(ExitCode.Error)
-    }
+      )
+      source = config.input.get match {
+        case Left(i) => i
+        case Right(f) =>
+          val s = Source.fromFile(f)
+          try s.getLines.mkString
+          finally s.close
+      }
+      exprs <- config.parser(source).run(config).flatMap {
+        case Success(value, _)    => IO.pure(value)
+        case Failure(_, _, extra) => IO.raiseError(new Exception(extra.trace(false).msg))
+      }
+      byteArray <- config.compiler(exprs).run(config)
+      exitCode  <- IO { new FileOutputStream(config.output.get).write(byteArray) }.attempt.toExitCode
+    } yield exitCode
 }
